@@ -1,15 +1,23 @@
 import { NextResponse } from "next/server";
 
-type RepoInfo = {
+type RepoInfoResponse = {
   owner: string;
   repo: string;
   branch: string;
+  description: string | null;
+  html_url: string;
 };
 
 type RequestPayload =
   | { action: "repo"; owner: string; repo: string }
   | { action: "tree"; owner: string; repo: string; branch: string }
-  | { action: "content"; owner: string; repo: string; branch: string; path: string };
+  | {
+      action: "content";
+      owner: string;
+      repo: string;
+      branch: string;
+      path: string;
+    };
 
 const GITHUB_API = "https://api.github.com";
 
@@ -36,12 +44,19 @@ export async function POST(request: Request) {
           { status: res.status },
         );
       }
-      const data = (await res.json()) as { default_branch: string };
-      return NextResponse.json({
+      const data = (await res.json()) as {
+        default_branch: string;
+        description?: string | null;
+        html_url: string;
+      };
+      const response: RepoInfoResponse = {
         owner: payload.owner,
         repo: payload.repo,
         branch: data.default_branch,
-      } as RepoInfo);
+        description: data.description ?? null,
+        html_url: data.html_url,
+      };
+      return NextResponse.json(response);
     }
 
     if (payload.action === "tree") {
